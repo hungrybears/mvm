@@ -16,24 +16,81 @@ const config = {
     update: update
   }
 };
-var cursors;
-var view, controller;
+var view;
 const game = new Phaser.Game(config);
 
 class View {
-  constructor(match, scene, platforms) {
+  constructor(match, scene) {
     this.scene = scene;
-    this.platforms = platforms;
     this.controller = new Controller(this, match);
-    this.sprite = this.randomPlayer();
     this.sprites = {};
     this.joinBtn = document.querySelector('button#join');
     this.joinBtn.onclick = (e) => {
       this.joinBtn.disabled = true;
       this.controller.joinMatch(this.sprite.x, this.sprite.y);
-    }
+    };
 
     match.observe(this);
+  }
+
+  setUpScene() {
+		this.scene.add.image(400, 300, 'sky');
+
+		this.platforms = this.scene.physics.add.staticGroup();
+		this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
+		this.scene.anims.create({
+			key: 'left',
+			frames: this.scene.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
+			frameRate: 10,
+			repeat: -1
+		});
+
+		this.scene.anims.create({
+			key: 'turn',
+			frames: [ { key: 'dude', frame: 4 } ],
+			frameRate: 20
+		});
+
+		this.scene.anims.create({
+			key: 'right',
+			frames: this.scene.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+			frameRate: 10,
+			repeat: -1
+		});
+
+		this.scene.input.keyboard.on('keydown_A', (e) => {
+		  console.log('SHOT');
+			view.shot();
+		});
+
+		this.cursors = this.scene.input.keyboard.createCursorKeys();
+		this.sprite = this.randomPlayer();
+
+		this.bullets = this.scene.physics.add.group();
+		this.scene.physics.add.overlap(this.sprite, this.bullets, this.onHit, null, this.scene);
+		this.scene.physics.add.collider(this.platforms, this.bullets);
+  }
+
+	phaserUpdate() {
+    let player = this.sprite;
+		// X MOVEMENTS
+		if (this.cursors.left.isDown) {
+			player.setVelocityX(-160);
+			player.anims.play('left', true);
+		} else if (this.cursors.right.isDown) {
+			player.setVelocityX(160);
+			player.anims.play('right', true);
+		} else {
+			player.setVelocityX(0);
+			player.anims.play('turn');
+		}
+		// Y MOVEMENTS
+		if (this.cursors.up.isDown && player.body.touching.down) {
+			player.setVelocityY(-330);
+		}
+
+		this.controller.updatePosition(player.x, player.y);
   }
 
   onNewPlayer(player) {
@@ -74,6 +131,27 @@ class View {
     const y = Phaser.Math.Between(0, 400);
     return this.createPlayer(x, y);
   }
+
+  shot() {
+    if (this.sprite.body.velocity.x === 0) return; // if still u can't shot
+		const movingRight = (this.sprite.body.velocity.x > 0);
+		const x = this.sprite.x + 25*(movingRight?1:-1);
+    const y = this.sprite.y;
+		const vx = 500*(movingRight?1:-1);
+
+		this.controller.shot(x, y, vx);
+    let bullet = this.bullets.create(x, y, 'bomb');
+		bullet.body.allowGravity = false;
+    bullet.setVelocityX(vx);
+  }
+
+  onHit() {
+    console.log('HIT');
+    this.sprite.setTint(0xfe9000);
+    setTimeout(() => {
+			this.sprite.setTint(0xffffff);
+    },100)
+  }
 }
 
 // -------- Phaser --------
@@ -88,53 +166,10 @@ function preload() {
 }
 
 function create() {
-  this.add.image(400, 300, 'sky');
-
-  let platforms = this.physics.add.staticGroup();
-  platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-
-  this.anims.create({
-    key: 'left',
-    frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
-    frameRate: 10,
-    repeat: -1
-  });
-
-  this.anims.create({
-    key: 'turn',
-    frames: [ { key: 'dude', frame: 4 } ],
-    frameRate: 20
-  });
-
-  this.anims.create({
-    key: 'right',
-    frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-    frameRate: 10,
-    repeat: -1
-  });
-
-  cursors = this.input.keyboard.createCursorKeys();
-
-  view = new View(new Match(), this, platforms);
-  controller = view.controller;
+  view = new View(new Match(), this);
+  view.setUpScene();
 }
 
 function update() {
-  let player = view.sprite;
-  if (cursors.left.isDown) {
-    player.setVelocityX(-160);
-    player.anims.play('left', true);
-  } else if (cursors.right.isDown) {
-    player.setVelocityX(160);
-    player.anims.play('right', true);
-  } else {
-    player.setVelocityX(0);
-    player.anims.play('turn');
-  }
-
-  if (cursors.up.isDown && player.body.touching.down) {
-    player.setVelocityY(-330);
-  }
-
-  controller.updatePosition(player.x, player.y);
+  view.phaserUpdate();
 }

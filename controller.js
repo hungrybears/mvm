@@ -16,4 +16,8 @@ class Controller {
     if (this.player === undefined) return;
     this.network.sendPosition(this.player.id, x, y);
   }
+
+  shot(x, y, isRight) {
+    console.log(x, y, isRight);
+  }
 }

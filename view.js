@@ -60,7 +60,6 @@ class View {
 		});
 
 		this.scene.input.keyboard.on('keydown_A', (e) => {
-		  console.log('SHOT');
 			view.shot();
 		});
 
@@ -95,6 +94,7 @@ class View {
 
   onNewPlayer(player) {
     let sprite = this.createPlayer(player.x, player.y);
+    let that = this;
     player.observe({
       sprite: sprite,
       onPositionUpdate: function(x, y) {
@@ -110,7 +110,7 @@ class View {
         sprite.y = y;
       },
       onLooseHp: function() {
-        console.log('HP--');
+        that.displayDamage(sprite);
       },
       onDie: function() {
         console.log('YOU DIED');
@@ -132,6 +132,12 @@ class View {
     return this.createPlayer(x, y);
   }
 
+  createBullet(x, y, vx) {
+    let bullet = this.bullets.create(x, y, 'bomb');
+		bullet.body.allowGravity = false;
+    bullet.setVelocityX(vx);
+  }
+
   shot() {
     if (this.sprite.body.velocity.x === 0) return; // if still u can't shot
 		const movingRight = (this.sprite.body.velocity.x > 0);
@@ -140,23 +146,26 @@ class View {
 		const vx = 500*(movingRight?1:-1);
 
 		this.controller.shot(x, y, vx);
-    let bullet = this.bullets.create(x, y, 'bomb');
-		bullet.body.allowGravity = false;
-    bullet.setVelocityX(vx);
+    this.createBullet(x, y, vx);
   }
 
-  onHit() {
-    console.log('HIT');
-    this.sprite.setTint(0xfe9000);
+  // WARNING: called by Phaser.Scene
+  // that's why we use global var view... #FIXME
+  onHit(sprite, bullet) {
+    view.displayDamage(sprite);
+    bullet.disableBody(true, true);
+    view.controller.hit();
+  }
+
+  displayDamage(sprite) {
+    sprite.setTint(0xfe9000);
     setTimeout(() => {
-			this.sprite.setTint(0xffffff);
-    },100)
+			sprite.setTint(0xffffff);
+    }, 100);
   }
 }
 
 // -------- Phaser --------
-
-
 function preload() {
   this.load.image('sky', 'assets/sky.png');
   this.load.image('ground', 'assets/platform.png');

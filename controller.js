@@ -17,7 +17,11 @@ class Controller {
     this.network.sendPosition(this.player.id, x, y);
   }
 
-  shot(x, y, isRight) {
-    console.log(x, y, isRight);
+  shot(x, y, vx) {
+    this.network.shot(this.player.id, x, y, vx);
+  }
+
+  hit() {
+    this.network.hit(this.player.id);
   }
 }

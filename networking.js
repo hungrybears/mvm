@@ -61,9 +61,30 @@ class Network {
         player.setPos(pos.x, pos.y);
       }
     });
+
+    this.socket.on('shot', (data) => {
+      this.view.createBullet(data.x, data.y, data.vx);
+    });
+
+    this.socket.on('hit', (id) => {
+      let player = this.match.getPlayer(id);
+      if (player === undefined) {
+        return;
+      } else {
+        player.looseHp();
+      }
+    });
   }
 
   sendPosition(id, x, y) {
     this.socket.emit('position', {id: id, x: x, y: y});
+  }
+
+  shot(id, x, y, vx) {
+    this.socket.emit('shot', {id: id, x: x, y: y, vx: vx});
+  }
+
+  hit(id) {
+    this.socket.emit('hit', id);
   }
 }

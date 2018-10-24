@@ -11,6 +11,11 @@ app.get('/', function(req, res){
 
 // -------- Game
 io.on('connection', function(socket){
+  let bcast = function(topic, msg) {
+    socket.broadcast.emit(topic, msg); // broadcast to everybody except this socket
+    //io.emit('position', pos); // broadcasts to everybody in the room
+  }
+
   socket.on('joingame', function(pos) {
     console.log('User ' + socket.id + ' joined');
     socket.emit('id', socket.id);
@@ -25,8 +30,15 @@ io.on('connection', function(socket){
   });
 
   socket.on('position', function(pos) {
-    socket.broadcast.emit('position', pos); // broadcast to everybody except this socket
-    //io.emit('position', pos); // broadcasts to everybody in the room
+    bcast('position', pos);
+  });
+
+  socket.on('shot', function(payload) {
+    bcast('shot', payload);
+  });
+
+  socket.on('hit', function(id) {
+    bcast('hit', id);
   });
 });
 

@@ -1,8 +1,8 @@
 // credits to http://lea.verou.me/2016/12/resolve-promises-externally-with-this-one-weird-trick/
 function defer() {
-  var res, rej;
+  let res, rej;
 
-  var promise = new Promise((resolve, reject) => {
+  let promise = new Promise((resolve, reject) => {
     res = resolve;
     rej = reject;
   });

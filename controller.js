@@ -1,7 +1,7 @@
 class Controller {
-  constructor(match) {
+  constructor(view, match) {
     this.match = match;
-    this.view = new View(this);
+    this.view = view;
     this.network = new Network(this.view, this, SERVER_ADDRESS);
     this.network.init();
   }
@@ -16,7 +16,7 @@ class Controller {
   }
 
   updatePosition(x, y) {
-    if (this.player == undefined) return;
+    if (this.player === undefined) return;
     this.network.sendPosition(this.player.id, x, y);
   }
 }

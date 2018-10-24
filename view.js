@@ -1,12 +1,31 @@
-var player;
-
-const SERVER_ADDRESS = '10.1.1.130:3000';
+const SERVER_ADDRESS = '10.1.1.123:3000';
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 300 },
+      debug: false
+    }
+  },
+  scene: {
+    preload: preload,
+    create: create,
+    update: update
+  }
+};
+var cursors;
+var view, controller;
+const game = new Phaser.Game(config);
 
 class View {
-  constructor(controller) {
-    this.controller = controller;
-    this.sprite = randomPlayer();
-    player = this.sprite; // TODO fix this
+  constructor(match, scene, platforms) {
+    this.scene = scene;
+    this.platforms = platforms;
+    this.controller = new Controller(this, match);
+    this.sprite = this.randomPlayer();
     this.sprites = {};
     this.joinBtn = document.querySelector('button#join');
     this.joinBtn.onclick = (e) => {
@@ -16,11 +35,11 @@ class View {
   }
 
   setPosition(id, x, y) {
-    var sprite = this.sprites[id];
+    let sprite = this.sprites[id];
     // as far as another player does not move, we don't know it exists!
-    if (sprite == undefined) {
+    if (sprite === undefined) {
       // if the player is not there, then create it
-      sprite = createPlayer(x, y);
+      sprite = this.createPlayer(x, y);
       this.sprites[id] = sprite;
     }
 
@@ -35,45 +54,37 @@ class View {
     sprite.x = x;
     sprite.y = y;
   }
+
+  createPlayer(x, y) {
+    let p = this.scene.physics.add.sprite(x, y, 'dude');
+    p.setBounce(0.2);
+    p.setCollideWorldBounds(true);
+    this.scene.physics.add.collider(p, this.platforms);
+    return p;
+  }
+
+  randomPlayer() {
+    const x = Phaser.Math.Between(0, 800);
+    const y = Phaser.Math.Between(0, 400);
+    return this.createPlayer(x, y);
+  }
 }
 
 // -------- Phaser --------
-var config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 300 },
-            debug: false
-        }
-    },
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
-};
 
-var platforms;
-var cursors;
-var game = new Phaser.Game(config);
-var scene;
-var controller;
 
 function preload() {
-    this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/platform.png');
-    this.load.image('star', 'assets/star.png');
-    this.load.image('bomb', 'assets/bomb.png');
-    this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+  this.load.image('sky', 'assets/sky.png');
+  this.load.image('ground', 'assets/platform.png');
+  this.load.image('star', 'assets/star.png');
+  this.load.image('bomb', 'assets/bomb.png');
+  this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
 }
 
 function create() {
   this.add.image(400, 300, 'sky');
 
-  platforms = this.physics.add.staticGroup();
+  let platforms = this.physics.add.staticGroup();
   platforms.create(400, 568, 'ground').setScale(2).refreshBody();
 
   this.anims.create({
@@ -98,25 +109,12 @@ function create() {
 
   cursors = this.input.keyboard.createCursorKeys();
 
-  scene = this;
-  controller = new Controller(new Match());
-}
-
-function createPlayer(x, y) {
-  p = scene.physics.add.sprite(x, y, 'dude');
-  p.setBounce(0.2);
-  p.setCollideWorldBounds(true);
-  scene.physics.add.collider(p, platforms);
-  return p;
-}
-
-function randomPlayer() {
-  x = Phaser.Math.Between(0, 800);
-  y = Phaser.Math.Between(0, 400);
-  return createPlayer(x, y);
+  view = new View(new Match(), this, platforms);
+  controller = view.controller;
 }
 
 function update() {
+  let player = view.sprite;
   if (cursors.left.isDown) {
     player.setVelocityX(-160);
     player.anims.play('left', true);

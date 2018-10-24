@@ -11,7 +11,7 @@ class Player {
   looseHp() {
     this.hp--;
     this.observer.onLooseHp();
-    if(this.hp == 0) {
+    if(this.hp === 0) {
       this.observer.onDie();
     }
   }

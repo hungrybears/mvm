@@ -1,3 +1,43 @@
+var player;
+
+const SERVER_ADDRESS = '10.1.1.130:3000';
+
+class View {
+  constructor(controller) {
+    this.controller = controller;
+    this.sprite = randomPlayer();
+    player = this.sprite; // TODO fix this
+    this.sprites = {};
+    this.joinBtn = document.querySelector('button#join');
+    this.joinBtn.onclick = (e) => {
+      this.joinBtn.disabled = true;
+      this.controller.joinMatch(this.sprite.x, this.sprite.y);
+    }
+  }
+
+  setPosition(id, x, y) {
+    var sprite = this.sprites[id];
+    // as far as another player does not move, we don't know it exists!
+    if (sprite == undefined) {
+      // if the player is not there, then create it
+      sprite = createPlayer(x, y);
+      this.sprites[id] = sprite;
+    }
+
+    if (sprite.x > x) {
+      sprite.anims.play('left', true);
+    } else if (sprite.x < x) {
+      sprite.anims.play('right', true);
+    } else {
+      sprite.anims.play('turn');
+    }
+
+    sprite.x = x;
+    sprite.y = y;
+  }
+}
+
+// -------- Phaser --------
 var config = {
     type: Phaser.AUTO,
     width: 800,
@@ -16,12 +56,11 @@ var config = {
     }
 };
 
-var player;
 var platforms;
 var cursors;
-
 var game = new Phaser.Game(config);
 var scene;
+var controller;
 
 function preload() {
     this.load.image('sky', 'assets/sky.png');
@@ -32,12 +71,10 @@ function preload() {
 }
 
 function create() {
-  scene = this;
   this.add.image(400, 300, 'sky');
 
   platforms = this.physics.add.staticGroup();
   platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-  player = createPlayer(100, 450);
 
   this.anims.create({
     key: 'left',
@@ -60,6 +97,9 @@ function create() {
   });
 
   cursors = this.input.keyboard.createCursorKeys();
+
+  scene = this;
+  controller = new Controller(new Match());
 }
 
 function createPlayer(x, y) {
@@ -92,66 +132,5 @@ function update() {
     player.setVelocityY(-330);
   }
 
-  var pos = {x: player.x, y: player.y};
-  sendPos(pos);
-}
-
-function sendPos(pos) {
-  if (playerId == undefined) return;
-  pos.id = playerId;
-  socket.emit('position', pos);
-}
-
-// -------- networking
-var socket;
-var playerId;
-var players = {};
-var btn = document.querySelector('button#join');
-btn.onclick = joinAndListen;
-
-function joinAndListen() {
-  socket = io('localhost:3000');
-
-  socket.on('id', function(id) {
-    playerId = id;
-    console.log('My ID is ' + playerId);
-  });
-
-  socket.on('newplayer', function(pos) {
-    // we are notified only of players that joined after us,
-    // old players notify their existence by moving.
-    console.log(pos.id + ' joined');
-    p = createPlayer(pos.x, pos.y);
-    players[pos.id] = p;
-  });
-
-  socket.on('leave', function(id) {
-    // use 'id'
-    console.log(id + ' disconnected');
-  });
-
-  socket.on('position', function(pos) {
-    var id = pos.id;
-    var p = players[id];
-    // as far as another player does not move, we don't know it exists!
-    if (p == undefined) {
-      // if the player is not there, then create it
-      p = createPlayer(pos.x, pos.y);
-      players[id] = p;
-    }
-
-    if (p.x > pos.x) {
-      p.anims.play('left', true);
-    } else if (p.x < pos.x) {
-      p.anims.play('right', true);
-    } else {
-      p.anims.play('turn');
-    }
-
-    p.x = pos.x;
-    p.y = pos.y;
-  });
-
-  socket.emit('joingame', {x: player.x, y: player.y});
-  btn.disabled = true;
+  controller.updatePosition(player.x, player.y);
 }

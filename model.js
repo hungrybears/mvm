@@ -1,5 +1,5 @@
 class Player {
-  constructor(id, x, y) {
+  constructor(id) {
     this.id = id;
     this.hp = 3;
   }
@@ -20,6 +20,11 @@ class Player {
 class Match {
   constructor() {
     this.players = {};
+  }
+
+  addMainPlayer(id) {
+    this.mainPlayer = new Player(id);
+    return this.mainPlayer;
   }
 
   addPlayer(player) {

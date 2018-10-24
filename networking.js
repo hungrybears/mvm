@@ -14,10 +14,10 @@ function defer() {
 }
 
 class Network {
-  constructor(view, controller, serverAddress) {
+  constructor(view, match, serverAddress) {
     this.view = view;
     // the network maps actions to controller as if they where performed locally
-    this.controller = controller;
+    this.match = match;
     this.serverAddress = serverAddress;
     this._playerId = defer();
   }
@@ -45,8 +45,7 @@ class Network {
       // we are notified only of players that joined after us,
       // old players notify their existence by moving.
       console.log(pos.id + ' joined');
-      this.controller.newPlayer(pos.id);
-      this.view.setPosition(pos.id, pos.x, pos.y);
+      this.match.newPlayer(pos.id, pos.x, pos.y);
     });
 
     this.socket.on('leave', (id) => {
@@ -55,7 +54,12 @@ class Network {
     });
 
     this.socket.on('position', (pos) => {
-      this.view.setPosition(pos.id, pos.x, pos.y);
+      let player = this.match.getPlayer(pos.id);
+      if (player === undefined) {
+        this.match.newPlayer(pos.id, pos.x, pos.y);
+      } else {
+        player.setPos(pos.x, pos.y);
+      }
     });
   }
 

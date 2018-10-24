@@ -1,4 +1,4 @@
-const SERVER_ADDRESS = '10.1.1.123:3000';
+const SERVER_ADDRESS = 'localhost:3000';
 const config = {
   type: Phaser.AUTO,
   width: 800,
@@ -32,35 +32,41 @@ class View {
       this.joinBtn.disabled = true;
       this.controller.joinMatch(this.sprite.x, this.sprite.y);
     }
+
+    match.observe(this);
   }
 
-  setPosition(id, x, y) {
-    let sprite = this.sprites[id];
-    // as far as another player does not move, we don't know it exists!
-    if (sprite === undefined) {
-      // if the player is not there, then create it
-      sprite = this.createPlayer(x, y);
-      this.sprites[id] = sprite;
-    }
+  onNewPlayer(player) {
+    let sprite = this.createPlayer(player.x, player.y);
+    player.observe({
+      sprite: sprite,
+      onPositionUpdate: function(x, y) {
+        if (sprite.x > x) {
+          sprite.anims.play('left', true);
+        } else if (sprite.x < x) {
+          sprite.anims.play('right', true);
+        } else {
+          sprite.anims.play('turn');
+        }
 
-    if (sprite.x > x) {
-      sprite.anims.play('left', true);
-    } else if (sprite.x < x) {
-      sprite.anims.play('right', true);
-    } else {
-      sprite.anims.play('turn');
-    }
-
-    sprite.x = x;
-    sprite.y = y;
+        sprite.x = x;
+        sprite.y = y;
+      },
+      onLooseHp: function() {
+        console.log('HP--');
+      },
+      onDie: function() {
+        console.log('YOU DIED');
+      },
+    });
   }
 
   createPlayer(x, y) {
-    let p = this.scene.physics.add.sprite(x, y, 'dude');
-    p.setBounce(0.2);
-    p.setCollideWorldBounds(true);
-    this.scene.physics.add.collider(p, this.platforms);
-    return p;
+    let sprite = this.scene.physics.add.sprite(x, y, 'dude');
+    sprite.setBounce(0.2);
+    sprite.setCollideWorldBounds(true);
+    this.scene.physics.add.collider(sprite, this.platforms);
+    return sprite;
   }
 
   randomPlayer() {

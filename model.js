@@ -1,11 +1,22 @@
-class Player {
-  constructor(id) {
-    this.id = id;
-    this.hp = 3;
-  }
-
+class Observable {
   observe(obs) {
     this.observer = obs;
+  }
+}
+
+class Player extends Observable {
+  constructor(id, x, y) {
+    super();
+    this.id = id;
+    this.hp = 3;
+    this.x = x;
+    this.y = y;
+  }
+
+  setPos(x, y) {
+    this.x = x;
+    this.y = y;
+    this.observer.onPositionUpdate(x, y);
   }
 
   looseHp() {
@@ -17,18 +28,21 @@ class Player {
   }
 }
 
-class Match {
+class Match extends Observable {
   constructor() {
+    super();
     this.players = {};
   }
 
-  addMainPlayer(id) {
-    this.mainPlayer = new Player(id);
+  addMainPlayer(id, x, y) {
+    this.mainPlayer = new Player(id, x, y);
     return this.mainPlayer;
   }
 
-  addPlayer(player) {
+  newPlayer(id, x, y) {
+    let player = new Player(id, x, y);
     this.players[player.id] = player;
+    this.observer.onNewPlayer(player);
   }
 
   deletePlayer(id) {
